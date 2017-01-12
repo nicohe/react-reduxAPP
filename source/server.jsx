@@ -1,13 +1,16 @@
 import http from 'http';
 import React from 'react';
-import { renderToString, renderToStaticMarkup } from 'react-dom/server';
+import { renderToString } from 'react-dom/server';
 import { ServerRouter, createServerRenderContext } from 'react-router';
 import { IntlProvider } from 'react-intl';
+import { Provider } from 'react-redux';
 
-import Pages from './pages/containers/Page';
-import Layout from './pages/components/Layout';
+import Pages from './pages/index';
 
 import messages from './messages.json';
+
+import store from './store';
+
 
 const domain = process.env.NODE_ENV === 'production'
   ? 'https://nico-react-redux-sfs.now.sh'
@@ -18,11 +21,13 @@ function requestHandler(request, response) {
   const context = createServerRenderContext();
 
   let html = renderToString(
-    <IntlProvider locale={locale} messages={messages[locale]}>
-      <ServerRouter location={request.url} context={context}>
-        <Pages />
-      </ServerRouter>
-    </IntlProvider>,
+    <Provider store={store}>
+      <IntlProvider locale={locale} messages={messages[locale]}>
+        <ServerRouter location={request.url} context={context}>
+          <Pages />
+        </ServerRouter>
+      </IntlProvider>
+    </Provider>,
   );
 
   const result = context.getResult();
@@ -33,32 +38,30 @@ function requestHandler(request, response) {
     response.writeHead(301, {
       Location: result.redirect.pathname,
     });
+    return response.end();
   }
 
   if (result.missed) {
     response.writeHead(404);
 
     html = renderToString(
-      <IntlProvider locale={locale} messages={messages[locale]}>
-        <ServerRouter location={request.url} context={context}>
-          <Pages />
-        </ServerRouter>
-      </IntlProvider>,
+      <Provider store={store}>
+        <IntlProvider locale={locale} messages={messages[locale]}>
+          <ServerRouter location={request.url} context={context}>
+            <Pages />
+          </ServerRouter>
+        </IntlProvider>
+      </Provider>,
     );
   }
 
   response.write(
-    renderToStaticMarkup(
-      <Layout
-        title="Aplicación"
-        content={html}
-        domain={domain}
-      />,
-    ),
+    layout({ content: html, title: 'Aplicación', domain }),
   );
-  response.end();
+
+  return response.end();
 }
 
 const server = http.createServer(requestHandler);
 
-server.listen(3000);
+server.listen(process.env.PORT || 3000);

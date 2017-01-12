@@ -2,11 +2,11 @@ import React, { Component, PropTypes } from 'react';
 
 import PostBody from '../../posts/containers/Post';
 import Loading from '../../shared/components/Loading';
-import Comment from '../../comments/components/Comment';
-
-import api from '../../api';
+import Comment from '../../comments/containers/Comment';
 
 import styles from './Page.css';
+
+import api from '../../api';
 
 class Post extends Component {
   constructor(props) {
@@ -14,8 +14,8 @@ class Post extends Component {
 
     this.state = {
       loading: true,
-      user: {},
       post: {},
+      user: {},
       comments: [],
     };
   }
@@ -47,20 +47,24 @@ class Post extends Component {
     if (this.state.loading) {
       return <Loading />;
     }
+
     return (
       <section name="post" className={styles.section}>
-        <PostBody
-          {...this.state.post}
-          user={this.state.user}
-          comments={this.state.comments}
-        />
-        <section className={styles.list}>
-          {this.state.comments.map(comment => (
-            <Comment key={comment.id} {...comment} />
-          ))
+        <section className={styles.main}>
+          <PostBody
+            isMain
+            {...this.state.post}
+            user={this.state.user}
+            comments={this.state.comments}
+          />
+        </section>
+        <section id="comments" className={styles.list}>
+          {this.state.comments
+            .map(comment => (
+              <Comment key={comment.id} {...comment} />
+            ))
           }
         </section>
-
       </section>
     );
   }
